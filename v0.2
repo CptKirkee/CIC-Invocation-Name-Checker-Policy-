@@ -1,0 +1,50 @@
+// ==UserScript==
+// @name         CIC Invocation Name Checker (Policy)
+// @namespace    http://cops-ber.aka.amazon.com/
+// @version      0.2
+// @whatsnew     0.1 first working version launched to DE, 0.2 added proper recognition of connecting words
+// @updateURL    http://cops-ber.aka.amazon.com/static/cic-invocation-check.js
+// @description  Performs Policy invocation name checks and marks the "Invocation names" row accordingly when a restricted word is identified in the invocation name. ...
+// @description  ... The script currently fires on restricted words that are parts of other word (e.g. "und" in "hund"). So watch out for misfires. ...
+// @description  ... You still need to apply own judgement to identify the invocatio name fail.
+// @author       koppmalt@
+// @credits      to torsfeld@ for advice and guidance
+// @match        https://skillcert.aka.amazon.com/*/marketing.html*
+// @include      https://skillcert.aka.amazon.com/*/marketing.html*
+// @include      https://fiddle.jshell.net/wsqq7wfz/3/show/light/
+// @require      https://unpkg.com/popper.js@1
+// @require      https://unpkg.com/tippy.js@4
+//==/UserScript==
+
+    //array structure: nonCompounded bis "Hörspiel", number bis "tausend", articles bis "eine", pronouns bis "deinem", wake words bis "app", launchPhrases bis "spiele"
+    //Attention: Restricted launch phrases include "rufe ab", "setze fort", "führe aus" & "sprich mit". As these expressions always frame a sentence object, they will never appear as an undivided searchable string. ...
+    //Attention: ... Therefore, only the distinctive part of these expressions are included in the flaggedWords array.
+    var flaggedWords = ["album", "radio", "film", "filme", "gruppe", "rewe", "hits", "joke", "jokes", "witz", "witze", "scherz", "scherze", "video", "liste", "videos", "songs", "song", "playlist", "playliste", "künstler", "musik", "music", "radiosender", "hits", "feed", "timer", "liste", "schwitze", "rezept", "rezepte", "hörspiele", "hörspiel",
+                        "zig", "hundert", "tausend",
+                        "der", "die", "das", "ein", "eine",
+                        "meines", "meinem", "deines", "deinem",
+                        "alexa", "echo", "amazon", "skill", "app",
+                        "frage", "frag", "sage", "sag", "suche", "such", "öffne", "benutze", "benutz", "lade", "lad", "verwende", "start", "starte", "rufe", "setze", "führe", "sprich", "beginne", "spiel", "spiele"];
+
+    let elem_invocation = $("div#spokenNames");
+    let invocation = elem_invocation.text().replace(/[^0-9a-z\s\u00E4\u00F6\u00FC\u00C4\u00D6\u00DC\u00df]/gi, '');
+    if (flaggedWords.some(function(v) { return invocation.indexOf(v) >= 0; })) {
+       var thetds = document.getElementsByTagName('td');
+       for (var j = 0; j < thetds.length; j++) {
+       if (thetds[j].innerHTML == "Invocation Names")
+           thetds[j].style.backgroundColor = "rgb(250, 0, 0)";
+           tippy('#spokenNames', {
+           content: 'Fail in invocation name detected. Consult SOP!',
+           placement: 'top',
+           size: 'large',
+           animation: 'fade',
+           })
+       }
+    }
+
+    if (/von\s|vom\s|mit\s|ob\s|nach\s|dass\s|im\s|in\s|bei\s|beim\s|um\s|für\s|und\s|wie\s/.test(invocation)) {
+       for (var k = 0; k < thetds.length; k++) {
+       if (thetds[k].innerHTML == "Invocation Names")
+           thetds[k].style.backgroundColor = "rgb(250, 0, 0)";
+       }
+    }
