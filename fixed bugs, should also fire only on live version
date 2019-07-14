@@ -1,0 +1,90 @@
+// ==UserScript==
+// @name         DEV CIC Invocation Name Checker (Policy)
+// @namespace    http://cops-ber.aka.amazon.com/
+// @version      0.2
+// @whatsnew     0.1 first working version launched to DE, 0.2 added proper recognition of connecting words
+// @updateURL    http://cops-ber.aka.amazon.com/static/cic-invocation-check.js
+// @description  Performs Policy invocation name checks and marks the "Invocation names" row accordingly when a restricted word is identified in the invocation name. ...
+// @description  ... The script currently fires on restricted words that are parts of other word (e.g. "und" in "hund"). So watch out for misfires. ...
+// @description  ... You still need to apply own judgement to identify the invocatio name fail.
+// @author       koppmalt@
+// @credits      to torsfeld@ for advice and guidance
+// @match        https://skillcert.aka.amazon.com/*/marketing.html*
+// @include      https://skillcert.aka.amazon.com/*/marketing.html*
+// @include      https://fiddle.jshell.net/wsqq7wfz/3/show/light/
+// @require      https://unpkg.com/popper.js@1
+// @require      https://unpkg.com/tippy.js@4
+//==/UserScript==
+
+    //array structure: nonCompounded bis "H�rspiel", number bis "tausend", other words bis "stop", pronouns bis "deinem", wake words bis "app", launchPhrases bis "spiele"
+    //Attention: Restricted launch phrases include "rufe ab", "setze fort", "f�hre aus" & "sprich mit". As these expressions always frame a sentence object, they will never appear as an undivided searchable string. ...
+    //Attention: ... Therefore, only the distinctive part of these expressions are included in the flaggedWords array.
+    var flaggedWords = ["album", "radio", "film", "filme", "gruppe", "rewe", "hits", "joke", "jokes", "witz", "witze", "scherz", "scherze", "video", "liste", "videos", "songs", "song", "playlist", "playliste", "k�nstler", "musik", "music", "radiosender", "hits", "feed", "timer", "liste", "schwitze", "rezept", "rezepte", "h�rspiele", "h�rspiel",
+                        "zig", "hundert", "tausend",
+                        "stop",
+                        "mathemonster",
+                        "meines", "meinem", "deines", "deinem",
+                        "alexa", "echo", "amazon", "skill", "app",
+                        "frage", "frag", "sage", "sag", "suche", "such", "�ffne", "benutze", "benutz", "lade", "lad", "verwende", "start", "starte", "rufe", "setze", "f�hre", "sprich", "beginne", "spiel", "spiele"];
+
+    let elem_invocation = $("div#spokenNames");
+    let invocation = elem_invocation.text().replace(/[^0-9a-z\s\u00E4\u00F6\u00FC\u00C4\u00D6\u00DC\u00df]/gi, '');
+    let invocationdotted = elem_invocation.text().replace(/[^0-9a-z\.\s\u00E4\u00F6\u00FC\u00C4\u00D6\u00DC\u00df]/gi, '');
+    var thetds = document.getElementsByTagName('td')
+    var thetdszwei = document.getElementsByTagName('td');
+    var statusesList = new Array();
+    var statuses = document.getElementById('versionSelectList');
+    for (i = 0; i < statuses.options.length; i++) {
+    statusesList[i] = statuses.options[i].text;
+    }
+    var result = statusesList.includes("N/A-LIVE");
+    alert(result) //check if live version was detected
+    if (result === false) {
+    if (flaggedWords.some(function(v) { return invocation.indexOf(v) >= 0; })) {
+       for (var j = 0; j < thetds.length; j++) {
+       if (thetds[j].innerHTML == "Invocation Names")
+           thetds[j].style.backgroundColor = "rgb(250, 0, 0)";
+           tippy('#spokenNames', {
+           content: 'Fail in invocation name detected. Consult SOP!',
+           placement: 'top',
+           size: 'large',
+           animation: 'fade',
+           })
+       }
+    }
+    else {
+    }
+   
+    if (/von\s|vom\s|mit\s|ob\s|nach\s|dass\s|im\s|in\s|bei\s|beim\s|um\s|für\s|und\s|wie\s|der\s|die\s|das\s|ein\s|eine\s/.test(invocation)) {
+       for (var k = 0; k < thetds.length; k++) {
+       if (thetds[k].innerHTML == "Invocation Names")
+           thetds[k].style.backgroundColor = "rgb(250, 0, 0)";
+           tippy('#spokenNames', {
+           content: 'Fail in invocation name detected. Restricted word included or compounding error! Also check eligibility of articles in SOP',
+           placement: 'top',
+           size: 'large',
+           animation: 'fade',
+           })
+       }
+    }
+    else {
+    }
+
+    if (/\.\S/.test(invocationdotted)) {
+       for (var m = 0; m < thetdszwei.length; m++) {
+       if (thetdszwei[m].innerHTML == "Invocation Names")
+           thetdszwei[m].style.backgroundColor = "rgb(250, 100, 0)";
+           tippy('#spokenNames', {
+           content: 'Fail in invocation name detected. No space between dots',
+           placement: 'top',
+           size: 'large',
+           animation: 'fade',
+           })
+       }
+    }
+    else {
+    }
+    }
+    else {
+    alert("Skill live, don't fail invocation name")
+    }
